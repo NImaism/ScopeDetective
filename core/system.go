@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/NImaism/ScopeDetective/model"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -13,52 +14,9 @@ import (
 	"time"
 )
 
-type JsonData struct {
-	AllowsBountySplitting             bool   `json:"allows_bounty_splitting"`
-	AverageTimeToBountyAwarded        *int   `json:"average_time_to_bounty_awarded"`
-	AverageTimeToFirstProgramResponse *int   `json:"average_time_to_first_program_response"`
-	AverageTimeToReportResolved       *int   `json:"average_time_to_report_resolved"`
-	Handle                            string `json:"handle"`
-	ID                                int    `json:"id"`
-	ManagedProgram                    bool   `json:"managed_program"`
-	Name                              string `json:"name"`
-	OffersBounties                    bool   `json:"offers_bounties"`
-	OffersSwag                        bool   `json:"offers_swag"`
-	ResponseEfficiencyPercentage      int    `json:"response_efficiency_percentage"`
-	SubmissionState                   string `json:"submission_state"`
-	URL                               string `json:"url"`
-	Website                           string `json:"website"`
-	Targets                           struct {
-		InScope []Scope `json:"in_scope"`
-	} `json:"targets"`
-}
-
 type System struct {
 	NotificationSystem *Messager
 	Options            *Options
-}
-
-type StoredData struct {
-	Data  []Message
-	Subs  []string
-	Mutex sync.Mutex
-}
-
-type Message struct {
-	SubDomain string
-	Owner     string
-	Url       string
-}
-type Scope struct {
-	AssetIdentifier            string `json:"asset_identifier"`
-	AssetType                  string `json:"asset_type"`
-	AvailabilityRequirement    string `json:"availability_requirement"`
-	ConfidentialityRequirement string `json:"confidentiality_requirement"`
-	EligibleForBounty          bool   `json:"eligible_for_bounty"`
-	EligibleForSubmission      bool   `json:"eligible_for_submission"`
-	Instruction                string `json:"instruction"`
-	IntegrityRequirement       string `json:"integrity_requirement"`
-	MaxSeverity                string `json:"max_severity"`
 }
 
 // New function Creates a new system instance with the specified notification system and options.
@@ -74,6 +32,7 @@ func (s *System) Run() {
 	ticker := time.NewTicker(time.Duration(s.Options.Delay) * time.Minute)
 	defer ticker.Stop()
 
+	s.NotificationSystem.sendLog("```yaml\n - 📡 Detective Initiates HackerOne Monitoring ! ```")
 	for {
 		select {
 		case <-ticker.C:
@@ -104,31 +63,31 @@ func (s *System) Pull() []byte {
 }
 
 // CalculateData function processes a byte slice of data to calculate values using concurrent processing, goroutines, and a wait group. It prints out messages to indicate progress and results.
-func (s *System) calculateData(data []byte) []Message {
+func (s *System) calculateData(data []byte) []model.Message {
 	fmt.Println("\033[32m[+] System Started !\033[0m")
+	s.NotificationSystem.sendLog("```yaml\n - 🔍 Detective Begins Document Inspection ! ```")
 
-	var Data []JsonData
+	var Data []model.JsonData
 	var wg sync.WaitGroup
 
-	CollectedMessage := StoredData{Data: []Message{}, Subs: []string{}}
+	CollectedMessage := model.StoredData{Data: []model.Message{}, Subs: []string{}}
 	_ = json.Unmarshal(data, &Data)
 	SavedData := s.openData(Data)
 
 	for _, Pr := range Data {
 		wg.Add(1)
-		go func(program JsonData) {
+		go func(program model.JsonData) {
 			CollectedMessage.Mutex.Lock()
 			for _, item := range program.Targets.InScope {
-				if item.AssetType == "URL" {
+				if item.AssetType == "URL" && item.EligibleForSubmission {
 					CollectedMessage.Subs = append(CollectedMessage.Subs, item.AssetIdentifier)
-					if item.EligibleForBounty {
-						if !s.Contains(SavedData, item.AssetIdentifier) {
-							CollectedMessage.Data = append(CollectedMessage.Data, Message{
-								SubDomain: item.AssetIdentifier,
-								Owner:     program.Name,
-								Url:       program.URL,
-							})
-						}
+					if !s.Contains(SavedData, item.AssetIdentifier) && (s.Options.Vdp || item.EligibleForBounty) {
+						CollectedMessage.Data = append(CollectedMessage.Data, model.Message{
+							SubDomain:   item.AssetIdentifier,
+							Owner:       program.Name,
+							Url:         program.URL,
+							MaxSeverity: item.MaxSeverity,
+						})
 					}
 				}
 			}
@@ -141,8 +100,11 @@ func (s *System) calculateData(data []byte) []Message {
 
 	s.saveData(CollectedMessage.Subs)
 	if len(CollectedMessage.Data) == 0 {
+		s.NotificationSystem.sendLog("```yaml\n - 📜 Detective Discovers No Pertinent Evidence !```")
 		fmt.Println("\u001B[35m[-] No Change \u001B[0m")
 	} else {
+
+		s.NotificationSystem.sendLog("```yaml\n - 🔮 Detective Makes Significant Discovery !```")
 		fmt.Printf("\u001B[35m[+] %d Change \u001B[0m\n", len(CollectedMessage.Data))
 	}
 
@@ -176,7 +138,7 @@ func (s *System) saveData(Subs []string) {
 }
 
 // OpenData function opens or creates a JSON file to store and retrieve data.
-func (s *System) openData(Data []JsonData) []string {
+func (s *System) openData(Data []model.JsonData) []string {
 	if _, err := os.Stat("data/Scopes.json"); os.IsNotExist(err) {
 		var Subs []string
 		for _, program := range Data {

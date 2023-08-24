@@ -9,6 +9,7 @@ import (
 type Options struct {
 	Webhook string
 	Delay   int
+	Vdp     bool
 }
 
 // NewParser function creates and returns a new instance of the Options struct.
@@ -22,7 +23,7 @@ func (o *Options) Parse() {
 	flagSet.SetDescription("ScopeDetective Program To Get Latest Scope In HackerOne")
 	flagSet.StringVar(&o.Webhook, "webhook", "", "discord webhook url")
 	flagSet.IntVar(&o.Delay, "delay", 10, "delay (min, default 10)")
-
+	flagSet.BoolVar(&o.Vdp, "vdp", false, "get vdp program")
 	_ = flagSet.Parse()
 
 	showBanner()
