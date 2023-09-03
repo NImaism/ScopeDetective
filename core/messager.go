@@ -10,12 +10,12 @@ import (
 )
 
 type Messager struct {
-	Webhook string
+	Options *Options
 }
 
 // NewMessager function creates and returns a new instance of the Messager struct.
-func NewMessager(webhook string) *Messager {
-	return &Messager{Webhook: webhook}
+func NewMessager(Option *Options) *Messager {
+	return &Messager{Options: Option}
 }
 
 // sendMessage function sends a message to a Discord channel using a webhook.
@@ -40,7 +40,7 @@ func (m *Messager) sendMessage(message model.Message) {
 		return
 	}
 
-	req, err := http.NewRequest("POST", m.Webhook, bytes.NewBuffer(payload))
+	req, err := http.NewRequest("POST", m.Options.Webhook, bytes.NewBuffer(payload))
 	if err != nil {
 		return
 	}
@@ -54,6 +54,9 @@ func (m *Messager) sendMessage(message model.Message) {
 }
 
 func (m *Messager) sendLog(message string) {
+	if !m.Options.Log {
+		return
+	}
 	msg := model.DiscordMessage{
 		Content:   "",
 		Username:  "ScopeDetective",
@@ -73,7 +76,7 @@ func (m *Messager) sendLog(message string) {
 		return
 	}
 
-	req, err := http.NewRequest("POST", m.Webhook, bytes.NewBuffer(payload))
+	req, err := http.NewRequest("POST", m.Options.Webhook, bytes.NewBuffer(payload))
 	if err != nil {
 		return
 	}

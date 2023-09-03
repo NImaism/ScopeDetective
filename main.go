@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/NImaism/ScopeDetective/core"
 	"fmt"
+	"github.com/NImaism/ScopeDetective/core"
 	"os"
 	"os/signal"
 )
@@ -12,7 +12,7 @@ func main() {
 	options := core.NewParser()
 	options.Parse()
 
-	system := core.New(core.NewMessager(options.Webhook), *options)
+	system := core.New(core.NewMessager(options), *options)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
