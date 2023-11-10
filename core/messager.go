@@ -53,6 +53,40 @@ func (m *Messager) sendMessage(message model.Message) {
 	}
 }
 
+func (m *Messager) sendSubMessage(message string, url string) {
+	msg := model.DiscordMessage{
+		Content:   "",
+		Username:  "ScopeDetective",
+		AvatarUrl: "https://media.discordapp.net/attachments/996196305711943801/1144225219880423464/logo.png?width=631&height=631",
+		Embeds: []model.DiscordEmbed{
+			{
+				Title:       "Click Me",
+				Description: message,
+				Url:         url,
+				Color:       0xADD8E6,
+				Timestamp:   time.Now().Format(time.RFC3339),
+			},
+		},
+	}
+
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
+
+	req, err := http.NewRequest("POST", m.Options.Webhook, bytes.NewBuffer(payload))
+	if err != nil {
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	if _, err = client.Do(req); err != nil {
+		return
+	}
+}
+
 func (m *Messager) sendLog(message string) {
 	if !m.Options.Log {
 		return

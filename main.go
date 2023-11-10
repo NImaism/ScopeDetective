@@ -13,6 +13,7 @@ func main() {
 	options.Parse()
 
 	system := core.New(core.NewMessager(options), *options)
+	fresh := core.NewFresh(core.NewMessager(options), *options)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -23,5 +24,6 @@ func main() {
 		}
 	}()
 
+	go fresh.Run()
 	system.Run()
 }

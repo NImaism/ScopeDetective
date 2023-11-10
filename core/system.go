@@ -29,7 +29,7 @@ func New(NotificationSystem *Messager, Option Options) *System {
 
 // Run function Runs the system in a loop, periodically fetching data and sending notifications based on calculations.
 func (s *System) Run() {
-	ticker := time.NewTicker(time.Duration(s.Options.Delay) * time.Minute)
+	ticker := time.NewTicker(time.Duration(s.Options.Delay+3) * time.Minute)
 	defer ticker.Stop()
 
 	s.NotificationSystem.sendLog("```yaml\n - 📡 Detective Initiates HackerOne Monitoring ! ```")
@@ -81,7 +81,7 @@ func (s *System) calculateData(data []byte) []model.Message {
 			for _, item := range program.Targets.InScope {
 				if item.AssetType == "URL" && item.EligibleForSubmission {
 					CollectedMessage.Subs = append(CollectedMessage.Subs, item.AssetIdentifier)
-					if !s.Contains(SavedData, item.AssetIdentifier) && (s.Options.Vdp || item.EligibleForBounty) {
+					if !Contains(SavedData, item.AssetIdentifier) && (s.Options.Vdp || item.EligibleForBounty) {
 						CollectedMessage.Data = append(CollectedMessage.Data, model.Message{
 							SubDomain:   item.AssetIdentifier,
 							Owner:       program.Name,
@@ -225,20 +225,12 @@ func (s *System) openData(Data []model.JsonData) []string {
 			fmt.Println("\033[34m[+] Problem has been solved\033[0m")
 			return Subs
 		} else {
+			if len(SavedSubs) == 0 {
+				syscall.Exit(0)
+			}
 			fmt.Println("\033[33m[+] " + "Count: " + strconv.Itoa(len(SavedSubs)) + "\033[0m")
 			return SavedSubs
 		}
 
 	}
-}
-
-// Contains function checks if an item exists in a list.
-func (s *System) Contains(list []string, item string) bool {
-	for _, v := range list {
-		if v == item {
-			return true
-		}
-	}
-
-	return false
 }
