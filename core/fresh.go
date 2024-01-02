@@ -120,6 +120,9 @@ func (F *Fresh) CompareData(Saved []model.Sub, New []model.Sub) {
 		}
 
 		if data.Title != saved.Title {
+			if data.Title == "Just a moment..." || saved.Title == "Just a moment..." {
+				continue
+			}
 			F.NotificationSystem.sendSubMessage(fmt.Sprintf("```yaml\n - 💸 Change Title Detected \n- oldTitle: %s \n- newTitle: %s ```", savedMap[url].Title, newMap[url].Title), newMap[url].URL)
 		}
 

@@ -46,7 +46,7 @@ func (o *Options) Parse() {
 }
 
 func splitStrings(text string) map[string]bool {
-	var data map[string]bool
+	data := make(map[string]bool)
 
 	if text == "" {
 		return data
