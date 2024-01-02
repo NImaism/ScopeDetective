@@ -67,7 +67,9 @@ func (F *Fresh) Start() {
 
 			for _, d := range subs {
 				if d != "" {
-					allSubs = append(allSubs, d)
+					if !F.Options.Excludes[d] {
+						allSubs = append(allSubs, d)
+					}
 				}
 			}
 		}(v)
